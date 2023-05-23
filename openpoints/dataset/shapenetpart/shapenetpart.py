@@ -93,7 +93,7 @@ class ShapeNetPart(Dataset):
         self.class_choice = class_choice
         self.transform = transform
 
-        if self.class_choice != None:
+        if self.class_choice is not None:
             id_choice = self.cat2id[self.class_choice]
             indices = (self.label == id_choice).squeeze()
             self.data = self.data[indices]
@@ -137,11 +137,10 @@ class ShapeNetPartNormal(Dataset):
                'motorbike', 'mug', 'pistol', 'rocket', 'skateboard', 'table']
     seg_num = [4, 2, 2, 4, 4, 3, 3, 2, 4, 2, 6, 2, 3, 3, 3, 3]
 
-
     cls_parts = {'earphone': [16, 17, 18], 'motorbike': [30, 31, 32, 33, 34, 35], 'rocket': [41, 42, 43],
-                   'car': [8, 9, 10, 11], 'laptop': [28, 29], 'cap': [6, 7], 'skateboard': [44, 45, 46], 'mug': [36, 37],
-                   'guitar': [19, 20, 21], 'bag': [4, 5], 'lamp': [24, 25, 26, 27], 'table': [47, 48, 49],
-                   'airplane': [0, 1, 2, 3], 'pistol': [38, 39, 40], 'chair': [12, 13, 14, 15], 'knife': [22, 23]}
+                 'car': [8, 9, 10, 11], 'laptop': [28, 29], 'cap': [6, 7], 'skateboard': [44, 45, 46], 'mug': [36, 37],
+                 'guitar': [19, 20, 21], 'bag': [4, 5], 'lamp': [24, 25, 26, 27], 'table': [47, 48, 49],
+                 'airplane': [0, 1, 2, 3], 'pistol': [38, 39, 40], 'chair': [12, 13, 14, 15], 'knife': [22, 23]}
     cls2parts = []
     cls2partembed = torch.zeros(16, 50)
     for i, cls in enumerate(classes):
@@ -161,7 +160,7 @@ class ShapeNetPartNormal(Dataset):
                  use_normal=True,
                  shape_classes=16,
                  presample=False,
-                 sampler='fps', 
+                 sampler='fps',
                  transform=None,
                  multihead=False,
                  **kwargs
@@ -173,9 +172,9 @@ class ShapeNetPartNormal(Dataset):
         self.cat = {}
         self.use_normal = use_normal
         self.presample = presample
-        self.sampler = sampler 
+        self.sampler = sampler
         self.split = split
-        self.multihead=multihead
+        self.multihead = multihead
         self.part_start = [0, 4, 6, 8, 12, 16, 19, 22, 24, 28, 30, 36, 38, 41, 44, 47]
         with open(self.catfile, 'r') as f:
             for line in f:
@@ -184,7 +183,7 @@ class ShapeNetPartNormal(Dataset):
         self.cat = {k: v for k, v in self.cat.items()}
         self.classes_original = dict(zip(self.cat, range(len(self.cat))))
 
-        if not class_choice is None:
+        if class_choice is not None:
             self.cat = {k: v for k, v in self.cat.items() if k in class_choice}
 
         self.meta = {}
@@ -277,7 +276,7 @@ class ShapeNetPartNormal(Dataset):
             point_set = point_set[:self.npoints]
             seg = seg[:self.npoints]
         if self.multihead:
-            seg=seg-self.part_start[cls[0]]
+            seg = seg - self.part_start[cls[0]]
 
         data = {'pos': point_set[:, 0:3],
                 'x': point_set[:, 3:6],
@@ -309,9 +308,9 @@ class ShapeNetPartCurve(Dataset):
     seg_num = [4, 2, 2, 4, 4, 3, 3, 2, 4, 2, 6, 2, 3, 3, 3, 3]
 
     cls_parts = {'earphone': [16, 17, 18], 'motorbike': [30, 31, 32, 33, 34, 35], 'rocket': [41, 42, 43],
-                   'car': [8, 9, 10, 11], 'laptop': [28, 29], 'cap': [6, 7], 'skateboard': [44, 45, 46], 'mug': [36, 37],
-                   'guitar': [19, 20, 21], 'bag': [4, 5], 'lamp': [24, 25, 26, 27], 'table': [47, 48, 49],
-                   'airplane': [0, 1, 2, 3], 'pistol': [38, 39, 40], 'chair': [12, 13, 14, 15], 'knife': [22, 23]}
+                 'car': [8, 9, 10, 11], 'laptop': [28, 29], 'cap': [6, 7], 'skateboard': [44, 45, 46], 'mug': [36, 37],
+                 'guitar': [19, 20, 21], 'bag': [4, 5], 'lamp': [24, 25, 26, 27], 'table': [47, 48, 49],
+                 'airplane': [0, 1, 2, 3], 'pistol': [38, 39, 40], 'chair': [12, 13, 14, 15], 'knife': [22, 23]}
     cls2parts = []
     cls2partembed = torch.zeros(16, 50)
     for i, cls in enumerate(classes):
@@ -322,7 +321,6 @@ class ShapeNetPartCurve(Dataset):
     for cat in cls_parts.keys():
         for label in cls_parts[cat]:
             part2cls[label] = cat
-
 
     def __init__(self,
                  data_root='data/ShapeNetPart/hdf5_data',
@@ -341,7 +339,7 @@ class ShapeNetPartCurve(Dataset):
         self.class_choice = class_choice
         self.transform = transform
         self.in_channels = 3
-        if self.class_choice != None:
+        if self.class_choice is not None:
             id_choice = self.cat2id[self.class_choice]
             indices = (self.label == id_choice).squeeze()
             self.data = self.data[indices]

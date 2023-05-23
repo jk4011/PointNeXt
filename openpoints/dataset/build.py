@@ -20,8 +20,8 @@ def concat_collate_fn(datas):
         pts.append(data['pos'])
         feats.append(data['x'])
         labels.append(data['y'])
-        batches += [i] *len(data['pos'])
-        
+        batches += [i] * len(data['pos'])
+
     data = {'pos': torch.cat(pts), 'x': torch.cat(feats), 'y': torch.cat(labels),
             'o': torch.IntTensor(offset), 'batch': torch.LongTensor(batches)}
     return data
@@ -37,6 +37,7 @@ def build_dataset_from_cfg(cfg, default_args=None):
     """
     return DATASETS.build(cfg, default_args=default_args)
 
+
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
@@ -51,7 +52,7 @@ def build_dataloader_from_cfg(batch_size,
                               ):
     if dataset is None:
         if datatransforms_cfg is not None:
-            # in case only val or test transforms are provided. 
+            # in case only val or test transforms are provided.
             if split not in datatransforms_cfg.keys() and split in ['val', 'test']:
                 trans_split = 'val'
             else:
@@ -83,7 +84,7 @@ def build_dataloader_from_cfg(batch_size,
                                                  worker_init_fn=worker_init_fn,
                                                  drop_last=split == 'train',
                                                  sampler=sampler,
-                                                 collate_fn=collate_fn, 
+                                                 collate_fn=collate_fn,
                                                  pin_memory=True
                                                  )
     else:
