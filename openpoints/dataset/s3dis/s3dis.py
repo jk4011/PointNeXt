@@ -8,9 +8,136 @@ from torch.utils.data import Dataset
 from ..data_util import crop_pc, voxelize
 from ..build import DATASETS
 
+import sys
+sys.path.append("/data/wlsgur4011/part_assembly")
+
+from part_assembly.data_stage1 import DatasetStage1
+
+
+@DATASETS.register_module()
+class S3DIS_DatasetStage1(Dataset):
+
+    num_classes = 2
+    gravity_dim = 2
+    """S3DIS dataset, loading the subsampled entire room as input without block/sphere subsampling.
+    number of points per room in average, median, and std: (794855.5, 1005913.0147058824, 939501.4733064277)
+    Args:
+        data_root (str, optional): Defaults to 'data/S3DIS/s3disfull'.
+        test_area (int, optional): Defaults to 5.
+        voxel_size (float, optional): the voxel size for donwampling. Defaults to 0.04.
+        voxel_max (_type_, optional): subsample the max number of point per point cloud. Set None to use all points.  Defaults to None.
+        split (str, optional): Defaults to 'train'.
+        transform (_type_, optional): Defaults to None.
+        loop (int, optional): split loops for each epoch. Defaults to 1.
+        presample (bool, optional): wheter to downsample each point cloud before training. Set to False to downsample on-the-fly. Defaults to False.
+        variable (bool, optional): where to use the original number of points. The number of point per point cloud is variable. Defaults to False.
+    """
+
+    def __init__(self,
+                 data_root: str = "/data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth",
+                 voxel_size: float = 0.04,
+                 voxel_max=None,
+                 split: str = 'train',
+                 transform=None,
+                 loop: int = 1,
+                 presample: bool = False,
+                 variable: bool = False,
+                 shuffle: bool = True,
+                 overfit: int = 5,
+                 scale: float = 7.,
+                 ):
+
+        super().__init__()
+        self.split, self.voxel_size, self.transform, self.voxel_max, self.loop = \
+            split, voxel_size, transform, voxel_max, loop
+        self.presample = presample
+        self.variable = variable
+        self.shuffle = shuffle
+
+        dataset = DatasetStage1(data_root)
+        self.data = []
+        for i, data in enumerate(dataset):
+            
+            sample = data['sample'].numpy() * scale
+            normal = data['normal'].numpy()
+            broken_label = data['broken_label'].numpy().reshape(-1, 1)
+            
+            cdata = np.hstack((sample, normal, broken_label))  # (N, 7)
+            cdata[:, :3] -= np.min(cdata[:, :3], 0)
+            if voxel_size:
+                coord, feat, label = cdata[:, 0:3], cdata[:, 3:6], cdata[:, 6:7]
+                uniq_idx = voxelize(coord, voxel_size)
+                coord, feat, label = coord[uniq_idx], feat[uniq_idx], label[uniq_idx]
+                cdata = np.hstack((coord, feat, label))
+            self.data.append(cdata)
+            
+            if overfit - 1 == i:
+                break
+
+        self.data_idx = np.arange(len(self.data))
+        assert len(self.data_idx) > 0
+        logging.info(f"\nTotally {len(self.data_idx)} samples in {split} set")
+
+    def __getitem__(self, idx):
+        data_idx = self.data_idx[idx % len(self.data_idx)]
+        if self.presample:
+            coord, feat, label = np.split(self.data[data_idx], [3, 6], axis=1)
+        else:
+            cdata = self.data[data_idx]
+            cdata[:, :3] -= np.min(cdata[:, :3], 0)
+            coord, feat, label = cdata[:, :3], cdata[:, 3:6], cdata[:, 6:7]
+            coord, feat, label = crop_pc(
+                coord, feat, label, self.split, self.voxel_size, self.voxel_max,
+                downsample=not self.presample, variable=self.variable, shuffle=self.shuffle)
+            # TODO: do we need to -np.min in cropped data?
+        label = label.squeeze(-1).astype(np.long)
+        data = {'pos': coord, 'x': feat, 'y': label}
+        # pre-process.
+        if self.transform is not None:
+            data = self.transform(data)
+
+        if 'heights' not in data.keys():
+            data['heights'] = torch.from_numpy(coord[:, self.gravity_dim:self.gravity_dim + 1].astype(np.float32))
+        return data
+
+    def __len__(self):
+        return len(self.data_idx) * self.loop
+        # return 1   # debug
+
+
 
 @DATASETS.register_module()
 class S3DIS(Dataset):
+    # classes = ['ceiling',
+    #            'floor',
+    #            'wall',
+    #            'beam',
+    #            'column',
+    #            'window',
+    #            'door',
+    #            'chair',
+    #            'table',
+    #            'bookcase',
+    #            'sofa',
+    #            'board',
+    #            'clutter']
+    num_classes = 13
+    # num_per_class = np.array([3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
+    #                           650464, 791496, 88727, 1284130, 229758, 2272837], dtype=np.int32)
+    # class2color = {'ceiling':     [0, 255, 0],
+    #                'floor':       [0, 0, 255],
+    #                'wall':        [0, 255, 255],
+    #                'beam':        [255, 255, 0],
+    #                'column':      [255, 0, 255],
+    #                'window':      [100, 100, 255],
+    #                'door':        [200, 200, 100],
+    #                'table':       [170, 120, 200],
+    #                'chair':       [255, 0, 0],
+    #                'sofa':        [200, 100, 100],
+    #                'bookcase':    [10, 200, 100],
+    #                'board':       [200, 200, 200],
+    #                'clutter':     [50, 50, 50]}
+    # cmap = [*class2color.values()]
     gravity_dim = 2
     """S3DIS dataset, loading the subsampled entire room as input without block/sphere subsampling.
     number of points per room in average, median, and std: (794855.5, 1005913.0147058824, 939501.4733064277)

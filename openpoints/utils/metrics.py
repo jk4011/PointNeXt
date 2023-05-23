@@ -61,15 +61,20 @@ class ConfusionMatrix:
 
     @torch.no_grad()
     def update(self, pred, true): 
+        import jhutil; jhutil.jhprint(0000, true)
+        import jhutil; jhutil.jhprint(5555, pred)
         """Update the confusion matrix with the given predictions."""
         true = true.flatten()
         pred = pred.flatten()
         if self.ignore_index is not None:
             if (true == self.ignore_index).sum() > 0:
-                pred[true == self.ignore_index] = self.virtual_num_classes -1
-                true[true == self.ignore_index] = self.virtual_num_classes -1
+                pred[true == self.ignore_index] = self.virtual_num_classes - 1
+                true[true == self.ignore_index] = self.virtual_num_classes - 1
         unique_mapping = true.flatten() * self.virtual_num_classes + pred.flatten()
         bins = torch.bincount(unique_mapping, minlength=self.virtual_num_classes**2)
+        import jhutil; jhutil.jhprint(1111, bins)
+        import jhutil; jhutil.jhprint(2222, self.virtual_num_classes)
+        import jhutil; jhutil.jhprint(3333, bins.view(self.virtual_num_classes, self.virtual_num_classes))
         self.value += bins.view(self.virtual_num_classes, self.virtual_num_classes)[:self.num_classes, :self.num_classes]
 
     def reset(self):
