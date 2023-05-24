@@ -2,12 +2,14 @@
 dataset:
   common:
     NAME: S3DIS_DatasetStage1
-    data_root: /data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth
+    train_data_root: /data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.train.pth
+    val_data_root: /data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth
     voxel_size: 0.04
+    overfit: -1
   train:
     split: train
     voxel_max: 24000
-    loop: 30  # here, the training has been looped 30 times. therefore, the training epochs do not need much.
+    loop: 1
     presample: False
   val:
     split: val
@@ -19,7 +21,7 @@ dataset:
     presample: False 
 
 feature_keys: x,heights
-num_classes: 13
+num_classes: 2
 batch_size: 32
 val_batch_size: 1
 

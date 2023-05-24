@@ -445,7 +445,7 @@ class PointNextEncoder(nn.Module):
             p0, f0 = p0['pos'], p0.get('x', None)
         if f0 is None:
             f0 = p0.clone().transpose(1, 2).contiguous()
-        p, f = [p0], [f0]
+        p, f = [p0.contiguous()], [f0]
         for i in range(0, len(self.encoder)):
             _p, _f = self.encoder[i]([p[-1], f[-1]])
             p.append(_p)

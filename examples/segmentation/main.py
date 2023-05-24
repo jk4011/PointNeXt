@@ -224,6 +224,7 @@ def main(gpu, cfg):
                                              distributed=cfg.distributed,
                                              )
     logging.info(f"length of training dataset: {len(train_loader.dataset)}")
+    logging.info(f"number of training batch: {len(train_loader)}")
 
     cfg.criterion_args.weight = None
     if cfg.get('cls_weighed_loss', False):
@@ -686,9 +687,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('Scene segmentation training/testing')
     parser.add_argument('--cfg', type=str, required=True, help='config file')
     parser.add_argument('--profile', action='store_true', default=False, help='set to True to profile speed')
+    parser.add_argument('--debug', action='store_true', default=False, help='set to True to profile speed')
     args, opts = parser.parse_known_args()
     cfg = EasyConfig()
     cfg.load(args.cfg, recursive=True)
+    if args.debug:
+        cfg["dataset"]["common"]["overfit"] = 32
+    
     cfg.update(opts)  # overwrite the default arguments in yml
 
     if cfg.seed is None:

@@ -11,7 +11,7 @@ from ..build import DATASETS
 import sys
 sys.path.append("/data/wlsgur4011/part_assembly")
 
-from part_assembly.data_stage1 import DatasetStage1
+from part_assembly.stage1 import DatasetStage1
 
 
 @DATASETS.register_module()
@@ -34,7 +34,8 @@ class S3DIS_DatasetStage1(Dataset):
     """
 
     def __init__(self,
-                 data_root: str = "/data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth",
+                 train_data_root: str = "/data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.train.pth",
+                 val_data_root: str = "/data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth",
                  voxel_size: float = 0.04,
                  voxel_max=None,
                  split: str = 'train',
@@ -43,8 +44,7 @@ class S3DIS_DatasetStage1(Dataset):
                  presample: bool = False,
                  variable: bool = False,
                  shuffle: bool = True,
-                 overfit: int = 5,
-                 scale: float = 7.,
+                 overfit: int = -1,
                  ):
 
         super().__init__()
@@ -54,11 +54,15 @@ class S3DIS_DatasetStage1(Dataset):
         self.variable = variable
         self.shuffle = shuffle
 
-        dataset = DatasetStage1(data_root)
+        if split == 'train':
+            dataset = DatasetStage1(train_data_root)
+        else:
+            dataset = DatasetStage1(val_data_root)
+        
         self.data = []
         for i, data in enumerate(dataset):
             
-            sample = data['sample'].numpy() * scale
+            sample = data['sample'].numpy()
             normal = data['normal'].numpy()
             broken_label = data['broken_label'].numpy().reshape(-1, 1)
             
@@ -101,6 +105,7 @@ class S3DIS_DatasetStage1(Dataset):
         return data
 
     def __len__(self):
+        
         return len(self.data_idx) * self.loop
         # return 1   # debug
 

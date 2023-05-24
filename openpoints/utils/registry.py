@@ -283,12 +283,13 @@ def build_from_cfg(cfg, registry, default_args=None):
     else:
         raise TypeError(
             f'type must be a str or valid type, but got {type(obj_type)}')
-    try:
+    # try:
+    if True:
         obj_cfg = copy.deepcopy(cfg)
         if default_args is not None:
             obj_cfg.update(default_args) 
         obj_cfg.pop('NAME')
         return obj_cls(**obj_cfg)
-    except Exception as e:
-        # Normal TypeError does not print class name.
-        raise type(e)(f'{obj_cls.__name__}: {e}')
+    # except Exception as e:
+    #     # Normal TypeError does not print class name.
+    #     raise type(e)(f'{obj_cls.__name__}: {e}')
