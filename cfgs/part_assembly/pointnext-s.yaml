@@ -49,3 +49,6 @@ datatransforms:
     scale: [0.9, 1.1]
     jitter_sigma: 0.005
     jitter_clip: 0.02
+
+
+batch_size: 8

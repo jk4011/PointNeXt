@@ -363,6 +363,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, scheduler, scaler
             logits = model(data)
             loss = criterion(logits, target) if 'mask' not in cfg.criterion_args.NAME.lower() \
                 else criterion(logits, target, data['mask'])
+                
 
         if cfg.use_amp:
             scaler.scale(loss).backward()
@@ -386,7 +387,11 @@ def train_one_epoch(model, train_loader, criterion, optimizer, scheduler, scaler
 
         # update confusion matrix
         cm.update(logits.argmax(dim=1), target)
-        loss_meter.update(loss.item())
+        if loss.item() is None:
+            import jhutil
+            jhutil.jhprint(1111, f"Loss is None at epoch {epoch} iter {idx}!")
+        else:
+            loss_meter.update(loss.item())
 
         if idx % cfg.print_freq:
             pbar.set_description(f"Train Epoch [{epoch}/{cfg.epochs}] "
