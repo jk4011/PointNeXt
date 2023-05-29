@@ -364,11 +364,15 @@ def train_one_epoch(model, train_loader, criterion, optimizer, scheduler, scaler
             loss = criterion(logits, target) if 'mask' not in cfg.criterion_args.NAME.lower() \
                 else criterion(logits, target, data['mask'])
                 
+        if torch.isnan(loss).any():
+            import jhutil; jhutil.jhprint(1111, f"Loss is Nan at epoch {epoch} iter {idx}!")
+            continue
 
         if cfg.use_amp:
             scaler.scale(loss).backward()
         else:
             loss.backward()
+        
         # optimize
         if num_iter == cfg.step_per_update:
             if cfg.get('grad_norm_clip') is not None and cfg.grad_norm_clip > 0.:
@@ -387,11 +391,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, scheduler, scaler
 
         # update confusion matrix
         cm.update(logits.argmax(dim=1), target)
-        if loss.item() is None:
-            import jhutil
-            jhutil.jhprint(1111, f"Loss is None at epoch {epoch} iter {idx}!")
-        else:
-            loss_meter.update(loss.item())
+        loss_meter.update(loss.item())
 
         if idx % cfg.print_freq:
             pbar.set_description(f"Train Epoch [{epoch}/{cfg.epochs}] "
@@ -406,6 +406,9 @@ def validate(model, val_loader, cfg, num_votes=1, data_transform=None):
     cm = ConfusionMatrix(num_classes=cfg.num_classes, ignore_index=cfg.ignore_index)
     pbar = tqdm(enumerate(val_loader), total=val_loader.__len__(), desc='Val')
     for idx, data in pbar:
+        assert len(data['y'].shape) == 2
+        if len(data['y'][0]) < 256:
+            continue
         keys = data.keys() if callable(data.keys) else data.keys
         for key in keys:
             data[key] = data[key].cuda(non_blocking=True)

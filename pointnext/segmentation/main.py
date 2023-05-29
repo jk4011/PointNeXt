@@ -395,6 +395,9 @@ def validate(model, val_loader, cfg, num_votes=1, data_transform=None):
         for key in keys:
             data[key] = data[key].cuda(non_blocking=True)
         target = data['y'].squeeze(-1)
+        assert len(target.shape) == 2
+        if target.size(1) < 256:
+            continue
         data['x'] = get_features_by_keys(data, cfg.feature_keys)
         logits = model(data)
         if 'mask' not in cfg.criterion_args.NAME or cfg.get('use_maks', False):
