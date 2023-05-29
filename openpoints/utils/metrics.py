@@ -155,7 +155,6 @@ class ConfusionMatrix:
         logging.info(out)
 
     def all_metrics(self):
-        import jhutil; jhutil.jhprint(2222, )
         tp, fp, fn = self.tp, self.fp, self.fn,  
   
         iou_per_cls = tp / (tp + fp + fn).clamp(min=1) * 100

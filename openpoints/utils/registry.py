@@ -2,7 +2,7 @@
 import inspect
 import warnings
 from functools import partial
-import copy 
+import copy
 
 
 class Registry:
@@ -63,8 +63,8 @@ class Registry:
 
     def __repr__(self):
         format_str = self.__class__.__name__ + \
-                     f'(name={self._name}, ' \
-                     f'items={self._module_dict})'
+            f'(name={self._name}, ' \
+            f'items={self._module_dict})'
         return format_str
 
     @staticmethod
@@ -287,7 +287,7 @@ def build_from_cfg(cfg, registry, default_args=None):
     if True:
         obj_cfg = copy.deepcopy(cfg)
         if default_args is not None:
-            obj_cfg.update(default_args) 
+            obj_cfg.update(default_args)
         obj_cfg.pop('NAME')
         return obj_cls(**obj_cfg)
     # except Exception as e:

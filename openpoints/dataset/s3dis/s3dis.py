@@ -11,7 +11,7 @@ from ..build import DATASETS
 import sys
 sys.path.append("/data/wlsgur4011/part_assembly")
 
-from part_assembly.stage1 import DatasetStage1
+from part_assembly.stage1 import Stage1SingleDataset
 
 
 @DATASETS.register_module()
@@ -48,46 +48,39 @@ class S3DIS_DatasetStage1(Dataset):
                  ):
 
         super().__init__()
-        self.split, self.voxel_size, self.transform, self.voxel_max, self.loop = \
-            split, voxel_size, transform, voxel_max, loop
+        self.split, self.voxel_size, self.transform, self.voxel_max, self.loop, self.overfit = \
+            split, voxel_size, transform, voxel_max, loop, overfit
         self.presample = presample
         self.variable = variable
         self.shuffle = shuffle
 
         if split == 'train':
-            dataset = DatasetStage1(train_data_root)
+            self.dataset = Stage1SingleDataset(train_data_root, overfit=self.overfit)
         else:
-            dataset = DatasetStage1(val_data_root)
+            self.dataset = Stage1SingleDataset(val_data_root, overfit=self.overfit)
         
-        self.data = []
-        for i, data in enumerate(dataset):
-            
-            sample = data['sample'].numpy()
-            normal = data['normal'].numpy()
-            broken_label = data['broken_label'].numpy().reshape(-1, 1)
-            
-            cdata = np.hstack((sample, normal, broken_label))  # (N, 7)
-            cdata[:, :3] -= np.min(cdata[:, :3], 0)
-            if voxel_size:
-                coord, feat, label = cdata[:, 0:3], cdata[:, 3:6], cdata[:, 6:7]
-                uniq_idx = voxelize(coord, voxel_size)
-                coord, feat, label = coord[uniq_idx], feat[uniq_idx], label[uniq_idx]
-                cdata = np.hstack((coord, feat, label))
-            self.data.append(cdata)
-            
-            if overfit - 1 == i:
-                break
 
-        self.data_idx = np.arange(len(self.data))
+        self.data_idx = np.arange(len(self.dataset))
         assert len(self.data_idx) > 0
         logging.info(f"\nTotally {len(self.data_idx)} samples in {split} set")
 
     def __getitem__(self, idx):
-        data_idx = self.data_idx[idx % len(self.data_idx)]
+
+        data = self.dataset[idx]
+        sample = data['sample'].numpy()
+        normal = data['normal'].numpy()
+        broken_label = data['broken_label'].numpy().reshape(-1, 1)
+
+        cdata = np.hstack((sample, normal, broken_label))  # (N, 7)
+        cdata[:, :3] -= np.min(cdata[:, :3], 0)
+        if self.voxel_size:
+            coord, feat, label = cdata[:, 0:3], cdata[:, 3:6], cdata[:, 6:7]
+            uniq_idx = voxelize(coord, self.voxel_size)
+            coord, feat, label = coord[uniq_idx], feat[uniq_idx], label[uniq_idx]
+            cdata = np.hstack((coord, feat, label))
         if self.presample:
-            coord, feat, label = np.split(self.data[data_idx], [3, 6], axis=1)
+            coord, feat, label = np.split(cdata, [3, 6], axis=1)
         else:
-            cdata = self.data[data_idx]
             cdata[:, :3] -= np.min(cdata[:, :3], 0)
             coord, feat, label = cdata[:, :3], cdata[:, 3:6], cdata[:, 6:7]
             coord, feat, label = crop_pc(
@@ -105,10 +98,8 @@ class S3DIS_DatasetStage1(Dataset):
         return data
 
     def __len__(self):
-        
         return len(self.data_idx) * self.loop
         # return 1   # debug
-
 
 
 @DATASETS.register_module()
@@ -157,6 +148,7 @@ class S3DIS(Dataset):
         presample (bool, optional): wheter to downsample each point cloud before training. Set to False to downsample on-the-fly. Defaults to False.
         variable (bool, optional): where to use the original number of points. The number of point per point cloud is variable. Defaults to False.
     """
+
     def __init__(self,
                  data_root: str = 'data/S3DIS/s3disfull',
                  test_area: int = 5,
@@ -199,7 +191,7 @@ class S3DIS(Dataset):
                 cdata = np.load(data_path).astype(np.float32)
                 cdata[:, :3] -= np.min(cdata[:, :3], 0)
                 if voxel_size:
-                    coord, feat, label = cdata[:,0:3], cdata[:, 3:6], cdata[:, 6:7]
+                    coord, feat, label = cdata[:, 0:3], cdata[:, 3:6], cdata[:, 6:7]
                     uniq_idx = voxelize(coord, voxel_size)
                     coord, feat, label = coord[uniq_idx], feat[uniq_idx], label[uniq_idx]
                     cdata = np.hstack((coord, feat, label))
