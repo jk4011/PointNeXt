@@ -2,14 +2,12 @@
 dataset:
   common:
     NAME: S3DIS_DatasetStage1
-    train_data_root: /data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.train.pth
-    val_data_root: /data/wlsgur4011/DataCollection/BreakingBad/data_split/artifact.val.pth
     voxel_size: 0.04
     overfit: -1
   train:
     split: train
-    voxel_max: 24000
-    loop: 1
+    voxel_max: 7500
+    loop: 5
     presample: False
   val:
     split: val
@@ -18,60 +16,68 @@ dataset:
   test:
     split: test
     voxel_max: null
-    presample: False 
+    presample: False
 
-feature_keys: x,heights
+feature_keys: x
 num_classes: 2
-batch_size: 32
 val_batch_size: 1
 
-dataloader:
-  num_workers: 6
-
 datatransforms:
-  train: [ChromaticAutoContrast, PointsToTensor, PointCloudScaling, PointCloudXYZAlign, PointCloudRotation, PointCloudJitter, ChromaticDropGPU, ChromaticNormalize]
-  val: [PointsToTensor, PointCloudXYZAlign, ChromaticNormalize]
-  vote: [ChromaticDropGPU]
+  train: [ChromaticAutoContrast,PointsToTensor,RandomRotate,RandomFlip,RandomScale,PointCloudScaling,PointCloudJitter,ChromaticDropGPU]
+  val: [PointsToTensor,RandomRotate]
+  vote: [PointCloudScaling]
   kwargs:
     color_drop: 0.2
-    gravity_dim: 2
-    scale: [0.9, 1.1]
-    angle: [0, 0, 1]
-    jitter_sigma: 0.005
-    jitter_clip: 0.02
+    jitter_sigma: 0.001
+    jitter_clip: 0.005
+    scale: [0.8, 1.2]
+    angle: [1.0, 1.0, 1.0]
+    normalize: False
+batch_size: 64
+dataloader:
+  num_workers: 0
+
+# ---------------------------------------------------------------------------- #
+# Evaluation cfgs
+# ---------------------------------------------------------------------------- #
+num_votes: 10 
+refine: True 
 
 # ---------------------------------------------------------------------------- #
 # Training cfgs
 # ---------------------------------------------------------------------------- #
-val_fn: validate
-ignore_index: null 
-epochs: 100
-
-cls_weighed_loss: False
-
-criterion_args:
-  NAME: CrossEntropy
-  label_smoothing: 0.2
-
-optimizer:
- NAME: 'adamw'  # performs 1 point better than adam
- weight_decay: 1.0e-4
 
 # lr_scheduler:
-sched: cosine
+lr: 0.001
+min_lr: null
+optimizer:
+  NAME: adamw
+  weight_decay: 1.0e-4  # the best 
+
+criterion_args:
+  NAME: Poly1FocalLoss
+
+# scheduler
+epochs: 300
+sched: multistep
+decay_epochs: [210, 270]
+decay_rate: 0.1
 warmup_epochs: 0
 
-min_lr: 1.0e-5 #
-lr: 0.01 # LR linear rule.
 
-grad_norm_clip: 10
+sched_on_epoch: True
+
+grad_norm_clip: 1
 use_voting: False
+
 # ---------------------------------------------------------------------------- #
 # io and misc
 # ---------------------------------------------------------------------------- #
-log_dir: 's3dis'
-save_freq: -1 # save epoch every xxx epochs, -1 only save last and best. 
+print_freq: 10
 val_freq: 1
 
+# ----------------- Model related
+pretrained_path: null 
+
 wandb:
-  project: PointNeXt-S3DIS
+  project: PointNext-ShapeNetPart
